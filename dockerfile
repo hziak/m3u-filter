@@ -1,6 +1,7 @@
 # Use an official Python runtime as the base image
 FROM python:3.11-slim
 
+
 # Set environment variables
 # - Prevents Python from writing pyc files to disk
 # - Ensures stdout and stderr are unbuffered
