@@ -13,7 +13,7 @@ app = FastAPI(title="M3U Filter Service")
 cache = TTLCache(maxsize=1000, ttl=60 * 60)  # 60 minutes TTL
 
 def generate_cache_key(url: str, keywords: Tuple[str, ...]) -> str:
-    key_string = url + "|" + ",".join(sorted(keywords)).lower()
+    key_string = url + "|" + ",".join(sorted(keywords))
     return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
 
 async def fetch_m3u(session: aiohttp.ClientSession, url: str) -> str:
@@ -32,7 +32,7 @@ def filter_m3u(content: str, keywords: List[str]) -> str:
     for line in lines:
         if line.startswith("#EXTINF"):
             # Check if any keyword is in the line (case-insensitive)
-            if any(keyword.lower() in line.lower() for keyword in keywords):
+            if any(keyword in line for keyword in keywords):
                 include = True
                 filtered_lines.append(line)
             else:
