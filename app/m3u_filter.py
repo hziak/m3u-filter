@@ -52,8 +52,11 @@ def filter_m3u(content: str, keywords: List[str]) -> str:
         try:
             line = line_wrong_encoding.encode(encoding['encoding']).decode('utf-8')
         except:
-            encoding = chardet.detect(rawbytes(line_wrong_encoding))
-            line = line_wrong_encoding.encode(encoding['encoding']).decode('utf-8')
+            try:
+                encoding = chardet.detect(rawbytes(line_wrong_encoding))
+                line = line_wrong_encoding.encode(encoding['encoding']).decode('utf-8')
+            except:
+                line = line_wrong_encoding
         if line.startswith("#EXTINF"):
             # Check if any keyword is in the line (case-insensitive)
             if any(keyword in line for keyword in keywords):
