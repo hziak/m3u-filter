@@ -32,7 +32,7 @@ def filter_m3u(content: str, keywords: List[str]) -> str:
     for line in lines:
         if line.startswith("#EXTINF"):
             # Check if any keyword is in the line (case-insensitive)
-            if any(keyword in line for keyword in keywords):
+            if any(keyword in line.encode('utf-8') for keyword in keywords):
                 include = True
                 filtered_lines.append(line.encode('utf-8'))
             else:
