@@ -1,3 +1,6 @@
+import struct
+
+from exceptiongroup import catch
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import Response
 import aiohttp
@@ -5,6 +8,7 @@ import asyncio
 from cachetools import TTLCache
 from typing import List, Tuple
 import hashlib
+import chardet
 
 app = FastAPI(title="M3U Filter Service")
 
@@ -15,6 +19,20 @@ cache = TTLCache(maxsize=1000, ttl=60 * 60)  # 60 minutes TTL
 def generate_cache_key(url: str, keywords: Tuple[str, ...]) -> str:
     key_string = url + "|" + ",".join(sorted(keywords))
     return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
+def rawbytes(s):
+    """Convert a string to raw bytes without encoding"""
+    outlist = []
+    for cp in s:
+        num = ord(cp)
+        if num < 255:
+            outlist.append(struct.pack('B', num))
+        elif num < 65535:
+            outlist.append(struct.pack('>H', num))
+        else:
+            b = (num & 0xFF0000) >> 16
+            H = num & 0xFFFF
+            outlist.append(struct.pack('>bH', b, H))
+    return b''.join(outlist)
 
 async def fetch_m3u(session: aiohttp.ClientSession, url: str) -> str:
     try:
@@ -27,22 +45,30 @@ async def fetch_m3u(session: aiohttp.ClientSession, url: str) -> str:
 
 def filter_m3u(content: str, keywords: List[str]) -> str:
     lines = content.splitlines()
+    encoding = chardet.detect(rawbytes(lines[0]))
+   # lines = content.decode(encoding).encode('utf-8').splitlines()
+    #lines = content.splitlines()
     filtered_lines = []
     include = False
-    for line in lines:
+    for line_wrong_encoding in lines:
+        try:
+            line = line_wrong_encoding.encode(encoding['encoding']).decode('utf-8')
+        except:
+            encoding = chardet.detect(rawbytes(line_wrong_encoding))
+            line = line_wrong_encoding.encode(encoding['encoding']).decode('utf-8')
         if line.startswith("#EXTINF"):
             # Check if any keyword is in the line (case-insensitive)
-            if any(keyword in line.encode('utf-8') for keyword in keywords):
+            if any(keyword in line for keyword in keywords):
                 include = True
-                filtered_lines.append(line.encode('utf-8'))
+                filtered_lines.append(line)
             else:
                 include = False
         elif line.startswith("#") or not line.strip():
             if include:
-                filtered_lines.append(line.encode('utf-8'))
+                filtered_lines.append(line)
         else:
             if include:
-                filtered_lines.append(line.encode('utf-8'))
+                filtered_lines.append(line)
     return "\n".join(filtered_lines)
 
 @app.get("/filter_m3u", response_class=Response, summary="Filter M3U by keywords")
@@ -68,7 +94,7 @@ async def filter_m3u_endpoint(
         # Cache the result
         cache[cache_key] = filtered_m3u
 
-    return Response(content=filtered_m3u, media_type="application/vnd.apple.mpegurl")
+    return Response(content=filtered_m3u)
 
 if __name__ == "__main__":
     import uvicorn
