@@ -1,6 +1,4 @@
 import struct
-
-from exceptiongroup import catch
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import Response
 import aiohttp
