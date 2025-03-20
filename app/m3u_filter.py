@@ -34,15 +34,15 @@ def filter_m3u(content: str, keywords: List[str]) -> str:
             # Check if any keyword is in the line (case-insensitive)
             if any(keyword in line for keyword in keywords):
                 include = True
-                filtered_lines.append(line)
+                filtered_lines.append(line.encode('utf-8'))
             else:
                 include = False
         elif line.startswith("#") or not line.strip():
             if include:
-                filtered_lines.append(line)
+                filtered_lines.append(line.encode('utf-8'))
         else:
             if include:
-                filtered_lines.append(line)
+                filtered_lines.append(line.encode('utf-8'))
     return "\n".join(filtered_lines)
 
 @app.get("/filter_m3u", response_class=Response, summary="Filter M3U by keywords")
