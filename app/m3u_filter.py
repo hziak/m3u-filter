@@ -12,7 +12,7 @@ app = FastAPI(title="M3U Filter Service")
 
 # Cache: key -> filtered m3u content
 # Size can be adjusted based on expected usage
-cache = TTLCache(maxsize=1000, ttl=60 * 60)  # 60 minutes TTL
+cache = TTLCache(maxsize=1000, ttl=60 * 600)  # 60 minutes TTL
 
 
 def generate_cache_key(url: str, keywords: Tuple[str, ...]) -> str:
@@ -104,7 +104,7 @@ async def filter_m3u_endpoint(
         # Cache the result
         cache[cache_key] = filtered_m3u
 
-    return Response(content=filtered_m3u)
+    return Response(content=filtered_m3u, media_type="application/vnd.apple.mpegurl")
 
 
 if __name__ == "__main__":
